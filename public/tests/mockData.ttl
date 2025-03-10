@@ -1,0 +1,6 @@
+@prefix ex: <http://example.com/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dlthings: <https://concepts.datalad.org/s/things/v1/> .
+
+ex:subject ex:predicate "Test Value" .
+dlthings:Property rdfs:subClassOf dlthings:Thing .

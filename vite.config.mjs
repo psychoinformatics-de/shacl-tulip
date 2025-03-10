@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
-// https://vitejs.dev/config/
 export default defineConfig(
   {
     plugins: [],
@@ -24,22 +23,10 @@ export default defineConfig(
     },
     build: {
       lib: {
-        // entry: {
-        //   'shacl-vue': './index.js',
-        //   'shapedata': './src/composables/shapedata.js'
-        // },
-        // name: 'ShaclVue',
-        // fileName: (format, entryName) => `${entryName}.${format}.js`,
       },
       outDir: 'dist',
       emptyOutDir: true,
       rollupOptions: {
-        // external: ['vue'],
-        // output: {
-        //   globals: {
-        //     vue: 'vue',
-        //   }
-        // }
       },
     },
     server: {

@@ -15,28 +15,16 @@ describe('ShapesDataset', () => {
     });
 
     it('should load RDF data from Turtle file and populate all shapes-related variables', async () => {
-
         expect(dataset.graphLoaded).toBe(false);
         expect(dataset.prefixesLoaded).toBe(false);
-
         server = httpServer.createServer({ });
-        // server.listen(8080, 'localhost');
         server.listen(PORT, HOST, (err) => {
-            if (err) {
-                if (err.code === 'EADDRINUSE') {
-                    console.warn(`Port ${PORT} is already in use. Ignoring...`);
-                } else {
-                    throw err; // Re-throw unexpected errors
-                }
-            } else {
-                console.log(`Test server started on http://${HOST}:${PORT}`);
-            }
+            if (err && err.code !== 'EADDRINUSE') throw err;
+            console.log(`Test server started on http://${HOST}:${PORT}`);
         });
-
         const fileUrl = `http://${HOST}:${PORT}/tests/mockShapes.ttl`
-        await dataset.loadRDF(fileUrl);
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for event loop to process stream
-
+        dataset.loadRDF(fileUrl);
+        await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
         expect(dataset.graphLoaded).toBe(true);
         expect(dataset.prefixesLoaded).toBe(true);
         expect(dataset.graph.size).toBe(318); // number of quads in the mockShapes.ttl file

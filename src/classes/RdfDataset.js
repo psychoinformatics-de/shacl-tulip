@@ -7,11 +7,12 @@ import formatsPretty from '@rdfjs/formats/pretty.js'
 /**
  * A class wrapping an RDF dataset (quad-store) from the `rdf-ext` library.
  */
-export class RdfDataset {
+export class RdfDataset extends EventTarget {
     /**
      * Create a wrapper object for an RDF dataset a.k.a. quad-store
      */
     constructor() {
+        super()
         this.rdfPretty = rdf.clone();
         this.rdfPretty.formats.import(formatsPretty);
         this.prefixes = {};
@@ -70,9 +71,11 @@ export class RdfDataset {
      */
     onPrefixFn(prefix, ns) {
         this.prefixes[prefix] = ns.value;
+        this.dispatchEvent(new CustomEvent('prefix', { detail: { prefix, ns } }));
     }
     onPrefixEndFn() {
         this.prefixesLoaded = true
+        this.dispatchEvent(new CustomEvent('prefixesLoaded', { detail: this.prefixes }));
     }
 
     /**
@@ -81,10 +84,12 @@ export class RdfDataset {
      */
     onDataFn(quad) {
         this.addQuad(quad)
+        this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
     async onDataEndFn() {
         this.serializedGraph = await this.serializeGraph()
         this.graphLoaded = true
+        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.graph }));
     }
 
     /**

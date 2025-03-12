@@ -35,6 +35,7 @@ export class ShapesDataset extends RdfDataset {
         if (predicate === RDF.type.value && object.value === SHACL.PropertyGroup.value) {
             this.propertyGroups[subject] = {};
         }
+        this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
 
     async onDataEndFn() {
@@ -86,6 +87,7 @@ export class ShapesDataset extends RdfDataset {
         }
         this.serializedGraph = await this.serializeGraph()
         this.graphLoaded = true
+        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.graph }));
     }
 
     getPropertyNodeKind(class_uri, property_uri, id_uri) {

@@ -18,27 +18,30 @@ Install the library into your virtual environment and project:
 npm install --save <path>
 ```
 
-Import and use `shacl-tulip` in your JavaScript code, for example
+Import and use `shacl-tulip` in your JavaScript code, for example:
 
 ```javascript
 import { ShapesDataset} from 'shacl-tulip'
 
 let shapesDS = new ShapesDataset();
 const fileUrl = 'https://concepts.datalad.org/s/things/v1.shacl.ttl';
-await shapesDS.loadRDF(fileUrl);
-
-console.log(shapesDS.propertyGroups)
-console.log(shapesDS.nodeShapes)
-console.log(shapesDS.nodeShapeNames)
-console.log(shapesDS.nodeShapeNamesArray)
-console.log(shapesDS.nodeShapeIRIs)
-console.log(shapesDS.prefixes)
-console.log(shapesDS.serializedGraph)
-console.log(shapesDS.graphLoaded)
-console.log(shapesDS.prefixesLoaded)
-console.log(shapesDS.graph)
-console.log(shapesDS.graph.size)
-
+// Listen for and act on the 'graphLoaded' event
+shapesDS.addEventListener('graphLoaded', (event) => {
+    console.log('Shapes graph fully loaded:', event.detail)
+    console.log(shapesDS.propertyGroups)
+    console.log(shapesDS.nodeShapes)
+    console.log(shapesDS.nodeShapeNames)
+    console.log(shapesDS.nodeShapeNamesArray)
+    console.log(shapesDS.nodeShapeIRIs)
+    console.log(shapesDS.prefixes)
+    console.log(shapesDS.serializedGraph)
+    console.log(shapesDS.graphLoaded)
+    console.log(shapesDS.prefixesLoaded)
+    console.log(shapesDS.graph)
+    console.log(shapesDS.graph.size)
+});
+// Load the RDF
+shapesDS.loadRDF(fileUrl);
 ```
 
 [See here](src/index.js) for all `shacl-tulip` exports, and inspect the [class code](src/classes) for class-specific functionality.

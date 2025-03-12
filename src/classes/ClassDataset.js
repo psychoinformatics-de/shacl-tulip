@@ -16,6 +16,7 @@ export class ClassDataset extends RdfDataset {
             quad.subject.termType !== 'BlankNode' &&
             quad.object.termType !== 'BlankNode' ) {
             this.addQuad(quad)
+            this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
         }
     }
 }

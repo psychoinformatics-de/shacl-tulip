@@ -8,8 +8,6 @@ let server;
 const PORT = 8080;
 const HOST = 'localhost';
 
-// import httpServer from 'http-server';
-
 // Test the RdfDataset class
 describe('RdfDataset', () => {
     let dataset;
@@ -83,34 +81,21 @@ describe('RdfDataset', () => {
         expect(serializedGraph).toContain('"example"');
     });
 
-    it('should load RDF data from a Turtle file and run associated functions', async () => {
+    it('should load RDF data from a Turtle file and run associated functions and catch emits', async () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-
         server = httpServer.createServer({ });
-        // server.listen(8080, 'localhost');
         server.listen(PORT, HOST, (err) => {
-            if (err) {
-                if (err.code === 'EADDRINUSE') {
-                    console.warn(`Port ${PORT} is already in use. Ignoring...`);
-                } else {
-                    throw err; // Re-throw unexpected errors
-                }
-            } else {
-                console.log(`Test server started on http://${HOST}:${PORT}`);
-            }
+            if (err && err.code !== 'EADDRINUSE') throw err;
+            console.log(`Test server started on http://${HOST}:${PORT}`);
         });
-
         expect(dataset.graphLoaded).toBe(false);
         expect(dataset.prefixesLoaded).toBe(false);
-
         const fileUrl = `http://${HOST}:${PORT}/tests/mockData.ttl`
-
-        const response = await fetch(fileUrl);
-        expect(response.status).toBe(200);
-        const text = await response.text();
-        await dataset.loadRDF(fileUrl);
-        // Wait for event loop to process stream
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const graphLoadedHandler = vi.fn();
+        dataset.addEventListener('graphLoaded', graphLoadedHandler);
+        dataset.loadRDF(fileUrl);
+        await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
+        expect(graphLoadedHandler).toHaveBeenCalledTimes(1);
         expect(dataset.graph.size).toBe(2);
         expect(dataset.prefixes['ex']).toBe('http://example.com/');
         expect(dataset.graphLoaded).toBe(true);
@@ -119,6 +104,15 @@ describe('RdfDataset', () => {
         console.log(`Closing server on http://${HOST}:${PORT}`);
         server.close();
 
+    });
+
+    it('should emit events for prefixes', async () => {
+        console.log(`Running RdfDataset Test ${i++}...`)
+        const prefixHandler = vi.fn();
+        dataset.addEventListener('prefix', prefixHandler);
+        dataset.onPrefixFn('ex', rdf.namedNode('http://example.com/'));
+        expect(prefixHandler).toHaveBeenCalledTimes(1);
+        expect(dataset.prefixes['ex']).toBe('http://example.com/');
     });
 
     it('should resolve blank nodes correctly', () => {

@@ -2,10 +2,10 @@
  * 
  */
 
-import { RdfDataset } from '@/classes/RdfDataset'
-import { SHACL, RDF } from '@/modules/namespaces';
+import { RdfDataset } from './RdfDataset'
+import { SHACL, RDF } from '../modules/namespaces';
 import rdf from 'rdf-ext';
-import { toIRI} from '@/modules/utils';
+import { toIRI} from '../modules/utils';
 
 export class ShapesDataset extends RdfDataset {
     

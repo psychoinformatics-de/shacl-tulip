@@ -2,8 +2,8 @@
  * 
  */
 
-import { RdfDataset } from '@/classes/RdfDataset'
-import { RDFS } from '@/modules/namespaces';
+import { RdfDataset } from './RdfDataset'
+import { RDFS } from '../modules/namespaces';
 
 export class ClassDataset extends RdfDataset {
     

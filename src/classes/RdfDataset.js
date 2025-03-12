@@ -1,7 +1,7 @@
 import rdf from 'rdf-ext';
-import { readRDF } from '@/modules/io'
-import { RDF, XSD } from '@/modules/namespaces';
-import { toCURIE } from '@/modules/utils';
+import { readRDF } from '../modules/io'
+import { RDF, XSD } from '../modules/namespaces';
+import { toCURIE } from '../modules/utils';
 import formatsPretty from '@rdfjs/formats/pretty.js'
 
 /**

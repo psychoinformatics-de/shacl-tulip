@@ -3,8 +3,8 @@
  */
 
 import rdf from 'rdf-ext';
-import { RDF } from '@/modules/namespaces';
-import { isEmptyObject, toIRI} from '@/modules/utils';
+import { RDF } from '../modules/namespaces';
+import { isEmptyObject, toIRI} from '../modules/utils';
 
 export class FormBase {
 

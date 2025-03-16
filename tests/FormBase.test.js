@@ -93,7 +93,7 @@ describe('FormBase', () => {
         form.saveNode(class_uri, subject_uri, shapesDS, rdfDSnew, false)
         // Even though formdata has 3 predicates for the record,
         // the id_iri field should not be saved as a separate quad
-        expect(rdfDSnew.graph.size).toBe(2)
+        expect(rdfDSnew.data.graph.size).toBe(2)
     });
 
 

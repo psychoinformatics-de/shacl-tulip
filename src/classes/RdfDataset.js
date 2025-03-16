@@ -7,19 +7,35 @@ import formatsPretty from '@rdfjs/formats/pretty.js'
 /**
  * A class wrapping an RDF dataset (quad-store) from the `rdf-ext` library.
  */
-export class RdfDataset extends EventTarget {
+export class RdfDataset {
     /**
      * Create a wrapper object for an RDF dataset a.k.a. quad-store
      */
-    constructor() {
-        super()
+    constructor(data = {}) {
+
+        this.data = data;
         this.rdfPretty = rdf.clone();
         this.rdfPretty.formats.import(formatsPretty);
-        this.prefixes = {};
-        this.serializedGraph = '';
-        this.graphLoaded = false;
-        this.prefixesLoaded = false;
-        this.graph = this.createDataset();
+
+        this.data.prefixes = {};
+        this.data.serializedGraph = '';
+        this.data.graphLoaded = false;
+        this.data.prefixesLoaded = false;
+        this.data.graph = this.createDataset();
+
+        this._eventTarget = new EventTarget();
+    }
+
+    addEventListener(type, listener, options) {
+        this._eventTarget.addEventListener(type, listener, options);
+    }
+
+    removeEventListener(type, listener, options) {
+        this._eventTarget.removeEventListener(type, listener, options);
+    }
+
+    dispatchEvent(event) {
+        return this._eventTarget.dispatchEvent(event);
     }
 
     /**
@@ -61,7 +77,7 @@ export class RdfDataset extends EventTarget {
      * Pre-load function to reset the graph loading state.
      */
     beforeLoadFn() {
-        this.graphLoaded = false
+        this.data.graphLoaded = false
     }
 
     /**
@@ -70,12 +86,12 @@ export class RdfDataset extends EventTarget {
      * @param {import("rdf-ext").NamedNode} ns - The namespace associated with the prefix.
      */
     onPrefixFn(prefix, ns) {
-        this.prefixes[prefix] = ns.value;
+        this.data.prefixes[prefix] = ns.value;
         this.dispatchEvent(new CustomEvent('prefix', { detail: { prefix, ns } }));
     }
     onPrefixEndFn() {
-        this.prefixesLoaded = true
-        this.dispatchEvent(new CustomEvent('prefixesLoaded', { detail: this.prefixes }));
+        this.data.prefixesLoaded = true
+        this.dispatchEvent(new CustomEvent('prefixesLoaded', { detail: this.data.prefixes }));
     }
 
     /**
@@ -87,9 +103,9 @@ export class RdfDataset extends EventTarget {
         this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
     async onDataEndFn() {
-        this.serializedGraph = await this.serializeGraph()
-        this.graphLoaded = true
-        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.graph }));
+        this.data.serializedGraph = await this.serializeGraph()
+        this.data.graphLoaded = true
+        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.data.graph }));
     }
 
     /**
@@ -97,7 +113,7 @@ export class RdfDataset extends EventTarget {
      * @param {import("rdf-ext").Quad} quad - The RDF quad to add.
      */
     addQuad(quad) {
-        this.graph.add(quad)
+        this.data.graph.add(quad)
     }
 
     /**
@@ -105,7 +121,7 @@ export class RdfDataset extends EventTarget {
      * @returns {Promise<string>} The serialized RDF graph in Turtle format.
      */
     async serializeGraph() {
-        return (await this.rdfPretty.io.dataset.toText('text/turtle', this.graph)).trim()
+        return (await this.rdfPretty.io.dataset.toText('text/turtle', this.data.graph)).trim()
     }
 
     /**
@@ -116,7 +132,7 @@ export class RdfDataset extends EventTarget {
     isRdfList(node) {
         let hasFirst = false;
         let hasRest = false;
-        this.graph.forEach((quad) => {
+        this.data.graph.forEach((quad) => {
             if (quad.subject.equals(node)) {
                 if (quad.predicate.value === RDF.first.value) hasFirst = true;
                 if (quad.predicate.value === RDF.rest.value) hasRest = true;
@@ -136,11 +152,11 @@ export class RdfDataset extends EventTarget {
         while (currentNode && currentNode.value !== RDF.nil.value) {
             let listItem = null;
             // Get the first element in the RDF list
-            this.graph.forEach((quad) => {
+            this.data.graph.forEach((quad) => {
                 if (quad.subject.equals(currentNode) && quad.predicate.value === RDF.first.value) {
                     // Resolve blank nodes recursively, but handle literals and IRIs separately
                     if (quad.object.termType === "BlankNode") {
-                        listItem = this.resolveBlankNode(quad.object, this.graph);
+                        listItem = this.resolveBlankNode(quad.object, this.data.graph);
                     } else if (quad.object.termType === "Literal") {
                         listItem = quad.object.value; // Store literal value
                     } else if (quad.object.termType === "NamedNode") {
@@ -153,7 +169,7 @@ export class RdfDataset extends EventTarget {
             }
             // Move to the next item in the list (rdf:rest)
             let nextNode = null;
-            this.graph.forEach((quad) => {
+            this.data.graph.forEach((quad) => {
                 if (quad.subject.equals(currentNode) && quad.predicate.value === RDF.rest.value) {
                     nextNode = quad.object;
                 }
@@ -165,7 +181,7 @@ export class RdfDataset extends EventTarget {
     
     resolveBlankNode(blankNode) {
         let resolvedObject = {};
-        this.graph.forEach((quad) => {
+        this.data.graph.forEach((quad) => {
             if (quad.subject.equals(blankNode)) {
                 const predicate = quad.predicate.value;
                 const object = quad.object;
@@ -191,11 +207,11 @@ export class RdfDataset extends EventTarget {
     getLiteralAndNamedNodes(predicate, propertyClass, prefixes) {
         var propClassCurie = toCURIE(propertyClass, prefixes)
         // a) use the literal node with xsd data type
-        const literalNodes = rdf.grapoi({ dataset: this.graph })
+        const literalNodes = rdf.grapoi({ dataset: this.data.graph })
             .hasOut(predicate, rdf.literal(String(propClassCurie), XSD.anyURI))
             .quads();
         // b) and the named node
-        const uriNodes = rdf.grapoi({ dataset: this.graph })
+        const uriNodes = rdf.grapoi({ dataset: this.data.graph })
             .hasOut(predicate, rdf.namedNode(propertyClass))
             .quads();
         // return as a concatenated array of quads
@@ -203,12 +219,12 @@ export class RdfDataset extends EventTarget {
     }
     
     getSubjectTriples(someTerm) {
-        const quads = rdf.grapoi({ dataset: this.graph, term: someTerm }).out().quads();
+        const quads = rdf.grapoi({ dataset: this.data.graph, term: someTerm }).out().quads();
         return Array.from(quads)
     }
     
     getObjectTriples(someTerm) {
-        const quads = rdf.grapoi({ dataset: this.graph, term: someTerm }).in().quads();
+        const quads = rdf.grapoi({ dataset: this.data.graph, term: someTerm }).in().quads();
         return Array.from(quads)
     }
 }

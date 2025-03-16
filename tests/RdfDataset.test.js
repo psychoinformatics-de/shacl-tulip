@@ -20,7 +20,7 @@ describe('RdfDataset', () => {
     // test creation of class instance
     it('should create an empty dataset', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        expect(dataset.graph.size).toBe(0);
+        expect(dataset.data.graph.size).toBe(0);
     });
 
     it('should add a quad to the dataset', () => {
@@ -32,8 +32,8 @@ describe('RdfDataset', () => {
 
         dataset.addQuad(quad);
 
-        expect(dataset.graph.size).toBe(1);
-        expect(dataset.graph.has(quad)).toBe(true);
+        expect(dataset.data.graph.size).toBe(1);
+        expect(dataset.data.graph.has(quad)).toBe(true);
     });
 
     it('should correctly detect an RDF list', () => {
@@ -88,18 +88,18 @@ describe('RdfDataset', () => {
             if (err && err.code !== 'EADDRINUSE') throw err;
             console.log(`Test server started on http://${HOST}:${PORT}`);
         });
-        expect(dataset.graphLoaded).toBe(false);
-        expect(dataset.prefixesLoaded).toBe(false);
+        expect(dataset.data.graphLoaded).toBe(false);
+        expect(dataset.data.prefixesLoaded).toBe(false);
         const fileUrl = `http://${HOST}:${PORT}/tests/mockData.ttl`
         const graphLoadedHandler = vi.fn();
         dataset.addEventListener('graphLoaded', graphLoadedHandler);
         dataset.loadRDF(fileUrl);
         await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
         expect(graphLoadedHandler).toHaveBeenCalledTimes(1);
-        expect(dataset.graph.size).toBe(2);
-        expect(dataset.prefixes['ex']).toBe('http://example.com/');
-        expect(dataset.graphLoaded).toBe(true);
-        expect(dataset.prefixesLoaded).toBe(true);
+        expect(dataset.data.graph.size).toBe(2);
+        expect(dataset.data.prefixes['ex']).toBe('http://example.com/');
+        expect(dataset.data.graphLoaded).toBe(true);
+        expect(dataset.data.prefixesLoaded).toBe(true);
 
         console.log(`Closing server on http://${HOST}:${PORT}`);
         server.close();
@@ -112,7 +112,7 @@ describe('RdfDataset', () => {
         dataset.addEventListener('prefix', prefixHandler);
         dataset.onPrefixFn('ex', rdf.namedNode('http://example.com/'));
         expect(prefixHandler).toHaveBeenCalledTimes(1);
-        expect(dataset.prefixes['ex']).toBe('http://example.com/');
+        expect(dataset.data.prefixes['ex']).toBe('http://example.com/');
     });
 
     it('should resolve blank nodes correctly', () => {

@@ -9,13 +9,13 @@ import { toIRI} from '../modules/utils';
 
 export class ShapesDataset extends RdfDataset {
     
-    constructor() {
-        super()
-        this.propertyGroups = {}
-        this.nodeShapes = {}
-        this.nodeShapeNames = {}
-        this.nodeShapeNamesArray = []
-        this.nodeShapeIRIs = null
+    constructor(data = {}) {
+        super(data)
+        this.data.propertyGroups = {}
+        this.data.nodeShapes = {}
+        this.data.nodeShapeNames = {}
+        this.data.nodeShapeNamesArray = []
+        this.data.nodeShapeIRIs = null
     }
 
     onDataFn(quad) {
@@ -25,30 +25,30 @@ export class ShapesDataset extends RdfDataset {
         const object = quad.object;
         // Isolate sh:NodeShape instances
         if (predicate === RDF.type.value && object.value === SHACL.NodeShape.value) {
-            this.nodeShapes[subject] = {properties: []};
+            this.data.nodeShapes[subject] = {properties: []};
         }
         // Get properties of node shapes
         if (predicate === SHACL.property.value) {
-            this.nodeShapes[subject].properties.push(object);
+            this.data.nodeShapes[subject].properties.push(object);
         }
         // Get property groups, if any
         if (predicate === RDF.type.value && object.value === SHACL.PropertyGroup.value) {
-            this.propertyGroups[subject] = {};
+            this.data.propertyGroups[subject] = {};
         }
         this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
 
     async onDataEndFn() {
         // Loop through all nodeshapes to restructure them
-        for (const [key, val] of Object.entries(this.nodeShapes)) {
+        for (const [key, val] of Object.entries(this.data.nodeShapes)) {
             // Get attributes (other than 'properties') of the nodeshape
-            this.graph.forEach(quad => {
+            this.data.graph.forEach(quad => {
                 if (quad.subject.value === key && quad.predicate.value != SHACL.property.value) {
                     // Check if the object is a blank node and resolve it
                     if (quad.object.termType === 'BlankNode') {
-                        this.nodeShapes[key][quad.predicate.value] = this.resolveBlankNode(quad.object);
+                        this.data.nodeShapes[key][quad.predicate.value] = this.resolveBlankNode(quad.object);
                     } else {
-                        this.nodeShapes[key][quad.predicate.value] = quad.object.value;
+                        this.data.nodeShapes[key][quad.predicate.value] = quad.object.value;
                     }
                 }
             });
@@ -62,7 +62,7 @@ export class ShapesDataset extends RdfDataset {
                 } else {
                     // Non-blank nodes are kept as they are, but eventually store only their `.value`
                     var new_node = {};
-                    this.graph.forEach((quad) => {
+                    this.data.graph.forEach((quad) => {
                         if (quad.subject.value === node.value) {
                             new_node[quad.predicate.value] = quad.object.value; // Store only .value
                         }
@@ -71,27 +71,27 @@ export class ShapesDataset extends RdfDataset {
                 }
             }
         }
-        for (const iri of Object.keys(this.nodeShapes)) { 
+        for (const iri of Object.keys(this.data.nodeShapes)) { 
             var parts = iri.split('/')
-            this.nodeShapeNames[parts[parts.length - 1]] = iri
+            this.data.nodeShapeNames[parts[parts.length - 1]] = iri
         }
-        this.nodeShapeNamesArray = Object.keys(this.nodeShapeNames).sort()
-        this.nodeShapeIRIs = Object.keys(this.nodeShapes).sort()
+        this.data.nodeShapeNamesArray = Object.keys(this.data.nodeShapeNames).sort()
+        this.data.nodeShapeIRIs = Object.keys(this.data.nodeShapes).sort()
         // Now handle the (possibility of) property groups
-        for (const [key, value] of Object.entries(this.propertyGroups)) {
-            this.graph.forEach(quad => {
+        for (const [key, value] of Object.entries(this.data.propertyGroups)) {
+            this.data.graph.forEach(quad => {
                 if (quad.subject.value === key && quad.predicate.value != RDF.type.value ) {
-                    this.propertyGroups[key][quad.predicate.value] = quad.object.value
+                    this.data.propertyGroups[key][quad.predicate.value] = quad.object.value
                 }
             });
         }
-        this.serializedGraph = await this.serializeGraph()
-        this.graphLoaded = true
-        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.graph }));
+        this.data.serializedGraph = await this.serializeGraph()
+        this.data.graphLoaded = true
+        this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.data.graph }));
     }
 
     getPropertyNodeKind(class_uri, property_uri, id_uri) {
-        var nodeShape = this.nodeShapes[class_uri]
+        var nodeShape = this.data.nodeShapes[class_uri]
         var propertyShapes = nodeShape.properties
         // Find associated property shape, for information about nodekind
         var propertyShape = propertyShapes.find((prop) => prop[SHACL.path.value] == property_uri)
@@ -125,7 +125,7 @@ export class ShapesDataset extends RdfDataset {
                 if (propertyShape.hasOwnProperty(SHACL.class.value)) {
                     var shClass = propertyShape[SHACL.class.value];
                     // this now assumes that the class is part of the driving shacl shapes graph
-                    var associatedNodeShape = this.nodeShapes[toIRI(shClass, this.prefixes)]
+                    var associatedNodeShape = this.data.nodeShapes[toIRI(shClass, this.data.prefixes)]
                     var hasIdField = associatedNodeShape.properties.find((prop) => prop[SHACL.path.value] == id_uri)
                     if (hasIdField) {
                         nodeFunc = rdf.namedNode

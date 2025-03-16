@@ -15,8 +15,8 @@ describe('ShapesDataset', () => {
     });
 
     it('should load RDF data from Turtle file and populate all shapes-related variables', async () => {
-        expect(dataset.graphLoaded).toBe(false);
-        expect(dataset.prefixesLoaded).toBe(false);
+        expect(dataset.data.graphLoaded).toBe(false);
+        expect(dataset.data.prefixesLoaded).toBe(false);
         server = httpServer.createServer({ });
         server.listen(PORT, HOST, (err) => {
             if (err && err.code !== 'EADDRINUSE') throw err;
@@ -25,26 +25,26 @@ describe('ShapesDataset', () => {
         const fileUrl = `http://${HOST}:${PORT}/tests/mockShapes.ttl`
         dataset.loadRDF(fileUrl);
         await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
-        expect(dataset.graphLoaded).toBe(true);
-        expect(dataset.prefixesLoaded).toBe(true);
-        expect(dataset.graph.size).toBe(318); // number of quads in the mockShapes.ttl file
+        expect(dataset.data.graphLoaded).toBe(true);
+        expect(dataset.data.prefixesLoaded).toBe(true);
+        expect(dataset.data.graph.size).toBe(318); // number of quads in the mockShapes.ttl file
         // Test content of all loaded variables
-        expect(dataset.nodeShapeNames).toEqual(
+        expect(dataset.data.nodeShapeNames).toEqual(
             {
                 AttributeSpecification: 'https://concepts.datalad.org/s/things/v1/AttributeSpecification',
                 Person: 'https://concepts.datalad.org/s/social/unreleased/Person',
                 DOI: 'https://concepts.datalad.org/s/identifiers/unreleased/DOI'
             }
         )
-        expect(dataset.nodeShapeNamesArray).toEqual(['AttributeSpecification', 'DOI', 'Person'])
-        expect(dataset.nodeShapeIRIs).toEqual(
+        expect(dataset.data.nodeShapeNamesArray).toEqual(['AttributeSpecification', 'DOI', 'Person'])
+        expect(dataset.data.nodeShapeIRIs).toEqual(
             [
                 'https://concepts.datalad.org/s/identifiers/unreleased/DOI',
                 'https://concepts.datalad.org/s/social/unreleased/Person',
                 'https://concepts.datalad.org/s/things/v1/AttributeSpecification'
             ]
         )
-        expect(dataset.propertyGroups).toEqual(
+        expect(dataset.data.propertyGroups).toEqual(
             {
                 'https://concepts.datalad.org/s/things/v1/BasicPropertyGroup': {
                   'http://www.w3.org/ns/shacl#order': '0',
@@ -58,7 +58,7 @@ describe('ShapesDataset', () => {
                 }
             }
         )
-        expect(dataset.prefixes).toEqual(
+        expect(dataset.data.prefixes).toEqual(
             {
                 'ex': 'http://example.com/',
                 'dlidentifiers': 'https://concepts.datalad.org/s/identifiers/unreleased/',

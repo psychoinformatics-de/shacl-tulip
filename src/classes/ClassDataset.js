@@ -7,8 +7,8 @@ import { RDFS } from '../modules/namespaces';
 
 export class ClassDataset extends RdfDataset {
     
-    constructor() {
-        super()
+    constructor(data = {}) {
+        super(data)
     }
 
     onDataFn(quad) {

@@ -8,7 +8,7 @@ import { isEmptyObject, toIRI} from '../modules/utils';
 
 export class FormBase {
 
-    constructor(id_iri = null) {
+    constructor(id_iri = null, content = {}) {
 
         if (!id_iri) {
             var msg = "id_iri is a required argument"
@@ -16,7 +16,7 @@ export class FormBase {
             throw new Error(msg)
         }
         this.ID_IRI = id_iri
-		this.content = {}
+		this.content = content
         this.ignoredProperties = [
             RDF.type.value,
         ]
@@ -230,7 +230,7 @@ export class FormBase {
         var quadArray = RdfDS.getSubjectTriples(subject_term)
         var IdQuadExists = false
         quadArray.forEach((quad) => {
-            var predicate_uri = toIRI(quad.predicate.value, RdfDS.prefixes)
+            var predicate_uri = toIRI(quad.predicate.value, RdfDS.data.prefixes)
             if (predicate_uri === this.ID_IRI) {
                 IdQuadExists = true
             }
@@ -253,7 +253,7 @@ export class FormBase {
         if (this.content[class_uri]) {
             // If we are in edit mode, the first step is to delete existing quads from graphData
             if (editMode) {
-                RdfDS.graph.deleteMatches(rdf.namedNode(node_uri), null, null, null)
+                RdfDS.data.graph.deleteMatches(rdf.namedNode(node_uri), null, null, null)
             }
 
             // Then we generate the quads
@@ -261,7 +261,7 @@ export class FormBase {
             var quads = this.formNodeToQuads(class_uri, node_uri, shapesDS)
             // and add them to the dataset
             quads.forEach(quad => {
-                RdfDS.graph.add(quad)
+                RdfDS.addQuad(quad)
             });
 
             // Some next steps depend on the type of the record's subject
@@ -283,8 +283,8 @@ export class FormBase {
                 var objectQuads = RdfDS.getObjectTriples(rdf.namedNode(node_uri))
                 objectQuads.forEach((quad) => {
                     let new_quad = rdf.quad(quad.subject, quad.predicate, subject)
-                    RdfDS.graph.delete(quad)
-                    RdfDS.graph.add(new_quad)
+                    RdfDS.data.graph.delete(quad)
+                    RdfDS.data.graph.add(new_quad)
                 });
             }
             // Change formdata node_uri to the actual id, if this was present:

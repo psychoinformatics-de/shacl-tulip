@@ -18,8 +18,8 @@ describe('ClassDataset', () => {
 
         console.log("Running ClassDataset Test 1...")
 
-        expect(dataset.graphLoaded).toBe(false);
-        expect(dataset.prefixesLoaded).toBe(false);
+        expect(dataset.data.graphLoaded).toBe(false);
+        expect(dataset.data.prefixesLoaded).toBe(false);
 
         server = httpServer.createServer({ });
         server.listen(PORT, HOST, (err) => {
@@ -29,9 +29,9 @@ describe('ClassDataset', () => {
         const fileUrl = `http://${HOST}:${PORT}/tests/mockData.ttl`
         dataset.loadRDF(fileUrl);
         await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
-        expect(dataset.graph.size).toBe(1);
-        expect(dataset.graphLoaded).toBe(true);
-        expect(dataset.prefixesLoaded).toBe(true);
+        expect(dataset.data.graph.size).toBe(1);
+        expect(dataset.data.graphLoaded).toBe(true);
+        expect(dataset.data.prefixesLoaded).toBe(true);
         const serializedGraph = await dataset.serializeGraph();
         expect(serializedGraph).not.toContain('<http://example.com/subject>');
         expect(serializedGraph).not.toContain('<http://example.com/predicate>');

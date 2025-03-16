@@ -28,17 +28,17 @@ const fileUrl = 'https://concepts.datalad.org/s/things/v1.shacl.ttl';
 // Listen for and act on the 'graphLoaded' event
 shapesDS.addEventListener('graphLoaded', (event) => {
     console.log('Shapes graph fully loaded:', event.detail)
-    console.log(shapesDS.propertyGroups)
-    console.log(shapesDS.nodeShapes)
-    console.log(shapesDS.nodeShapeNames)
-    console.log(shapesDS.nodeShapeNamesArray)
-    console.log(shapesDS.nodeShapeIRIs)
-    console.log(shapesDS.prefixes)
-    console.log(shapesDS.serializedGraph)
-    console.log(shapesDS.graphLoaded)
-    console.log(shapesDS.prefixesLoaded)
-    console.log(shapesDS.graph)
-    console.log(shapesDS.graph.size)
+    console.log(shapesDS.data.propertyGroups)
+    console.log(shapesDS.data.nodeShapes)
+    console.log(shapesDS.data.nodeShapeNames)
+    console.log(shapesDS.data.nodeShapeNamesArray)
+    console.log(shapesDS.data.nodeShapeIRIs)
+    console.log(shapesDS.data.prefixes)
+    console.log(shapesDS.data.serializedGraph)
+    console.log(shapesDS.data.graphLoaded)
+    console.log(shapesDS.data.prefixesLoaded)
+    console.log(shapesDS.data.graph)
+    console.log(shapesDS.data.graph.size)
 });
 // Load the RDF
 shapesDS.loadRDF(fileUrl);

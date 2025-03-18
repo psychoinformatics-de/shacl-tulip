@@ -12,17 +12,14 @@ export class RdfDataset {
      * Create a wrapper object for an RDF dataset a.k.a. quad-store
      */
     constructor(data = {}) {
-
         this.data = data;
         this.rdfPretty = rdf.clone();
         this.rdfPretty.formats.import(formatsPretty);
-
         this.data.prefixes = {};
         this.data.serializedGraph = '';
         this.data.graphLoaded = false;
         this.data.prefixesLoaded = false;
         this.data.graph = this.createDataset();
-
         this._eventTarget = new EventTarget();
     }
 
@@ -50,9 +47,9 @@ export class RdfDataset {
      * Loads RDF data from a given URL and processes prefixes and quads.
      * @param {string} url - The URL of the RDF document.
      */
-    async loadRDF(url) {
+    async loadRDF(url, headers = {}) {
         this.beforeLoadFn()
-        readRDF(url)
+        readRDF(url, headers)
 		.then(quadStream => {
 			// Load prefixes
 			quadStream.on('prefix', (prefix, ns) => {
@@ -99,11 +96,16 @@ export class RdfDataset {
      * @param {import("rdf-ext").Quad} quad - The RDF quad.
      */
     onDataFn(quad) {
+        // The first following line, moved here from shacl-vue's graphdata composable,
+        // was an attempt to solve https://hub.datalad.org/datalink/annotate-trr379-demo/issues/32.
+        // But it was a faulty attempt, since the object was different. Still, leaving it here since
+        // deleting matches would prospectively solve the duplication of named node or literal objects
+        this.data.graph.deleteMatches(quad.subject, quad.predicate, quad.object, null)
         this.addQuad(quad)
         this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
     async onDataEndFn() {
-        this.data.serializedGraph = await this.serializeGraph()
+        await this.updateSerializedGraph()
         this.data.graphLoaded = true
         this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.data.graph }));
     }
@@ -122,6 +124,10 @@ export class RdfDataset {
      */
     async serializeGraph() {
         return (await this.rdfPretty.io.dataset.toText('text/turtle', this.data.graph)).trim()
+    }
+
+    async updateSerializedGraph() {
+        this.data.serializedGraph = (await this.rdfPretty.io.dataset.toText('text/turtle', this.data.graph)).trim()
     }
 
     /**

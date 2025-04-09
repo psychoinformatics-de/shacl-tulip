@@ -251,7 +251,7 @@ export class FormBase {
         }
     }
 
-    saveNode(class_uri, node_uri, shapesDS, RdfDS, editMode) {
+    saveNode(class_uri, node_uri, shapesDS, RdfDS, editMode, cloneFunc = structuredClone) {
         var changeNodeIdx = false
         var subject_iri = null
         // Check if the node exists beforehand
@@ -294,7 +294,7 @@ export class FormBase {
             }
             // Change formdata node_uri to the actual id, if this was present:
             if (changeNodeIdx && subject_iri !== node_uri) {
-                this.content[class_uri][subject_iri] = structuredClone(this.content[class_uri][node_uri])
+                this.content[class_uri][subject_iri] = cloneFunc(this.content[class_uri][node_uri])
                 delete this.content[class_uri][node_uri]
             }
             return {

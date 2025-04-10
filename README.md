@@ -6,10 +6,19 @@ This is the main library behind [`shacl-vue`](https://github.com/psychoinformati
 
 ## Usage
 
+### Install from `npm`
+
+```
+npm install shacl-tulip
+```
+
+
+### Install from latest source code
+
 Clone the source code:
 
 ```
-git clone https://github.com/psychoinformatics-de/shacl-tulip.git
+git clone https://github.com/psychoinformatics-de/shacl-tulip.git <path>
 ```
 
 Install the library into your virtual environment and project:
@@ -17,6 +26,8 @@ Install the library into your virtual environment and project:
 ```
 npm install --save <path>
 ```
+
+### Using `shacl-tulip`
 
 Import and use `shacl-tulip` in your JavaScript code, for example:
 

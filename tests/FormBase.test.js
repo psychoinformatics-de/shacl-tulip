@@ -12,7 +12,7 @@ const HOST = 'localhost';
 // Test the FormBase class
 describe('FormBase', () => {
     let form;
-    let id_iri = 'https://concepts.datalad.org/s/things/v1/id'
+    let id_iri = 'https://concepts.datalad.org/s/things/v1/pid'
     let shapesDS = new ShapesDataset();
     let rdfDS = new RdfDataset();
 
@@ -20,8 +20,10 @@ describe('FormBase', () => {
         form = new FormBase(id_iri);
     });
 
-    it('should throw an error if the required constructor argument is missing', () => {
-        expect(() => new FormBase()).toThrowError()
+    it('should throw an error if the required ID_IRI argument is missing for specific functions', () => {
+        var f = new FormBase();        
+        expect(() => f.formNodeToQuads(null, null, null)).toThrowError()
+        expect(() => f.quadsToFormData(null, null, null)).toThrowError()
     });
 
     it('should handle all form functionality correctly', async () => {

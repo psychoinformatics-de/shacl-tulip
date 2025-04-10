@@ -10,11 +10,6 @@ export class FormBase {
 
     constructor(id_iri = null, content = {}) {
 
-        if (!id_iri) {
-            var msg = "id_iri is a required argument"
-            console.error(msg)
-            throw new Error(msg)
-        }
         this.ID_IRI = id_iri
 		this.content = content
         this.ignoredProperties = [
@@ -32,6 +27,14 @@ export class FormBase {
         //   } 
         // }
 	}
+
+    _checkIDiri(mthd) {
+        if (!this.ID_IRI) {
+            var msg = `Instance property 'ID_IRI' is required in order to use instance method: ${mthd}.`
+            console.error(msg)
+            throw new Error(msg)
+        }
+    }
 
     addSubject(class_uri, subject_uri, setVal_class={}, setVal_subject={}) {
         // add_empty_node
@@ -130,6 +133,7 @@ export class FormBase {
     }
 
     formNodeToQuads(class_uri, subject_uri, shapesDS) {
+        this._checkIDiri('formNodeToQuads')
         // Node = subject_uri = a specific identifiable object that was edited
         // Empty array to store quads
         var quadArray = []
@@ -206,6 +210,7 @@ export class FormBase {
     }
 
     quadsToFormData(class_uri, subject_term, RdfDS) {
+        this._checkIDiri('quadsToFormData')
         // Subject term should be namedNode or blankNode
         var subject_uri = subject_term.value
         this.addSubject(class_uri, subject_uri)
@@ -246,7 +251,7 @@ export class FormBase {
         }
     }
 
-    saveNode(class_uri, node_uri, shapesDS, RdfDS, editMode) {
+    saveNode(class_uri, node_uri, shapesDS, RdfDS, editMode, cloneFunc = structuredClone) {
         var changeNodeIdx = false
         var subject_iri = null
         // Check if the node exists beforehand
@@ -289,7 +294,7 @@ export class FormBase {
             }
             // Change formdata node_uri to the actual id, if this was present:
             if (changeNodeIdx && subject_iri !== node_uri) {
-                this.content[class_uri][subject_iri] = structuredClone(this.content[class_uri][node_uri])
+                this.content[class_uri][subject_iri] = cloneFunc(this.content[class_uri][node_uri])
                 delete this.content[class_uri][node_uri]
             }
             return {
@@ -297,8 +302,7 @@ export class FormBase {
                 node_iri: subject_iri || node_uri
             }
             // at the end, what to do with current data in formdata?
-            // we keep it there because this keeps track of changes during
-            // the session, so that we know what to submit back to the service.
+            // we keep it there because this keeps track of changes during the session
         } else {
             console.error(`\t- Node ${class_uri} does not exist`)
         }

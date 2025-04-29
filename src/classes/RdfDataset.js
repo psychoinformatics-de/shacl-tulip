@@ -49,25 +49,28 @@ export class RdfDataset {
      */
     async loadRDF(url, headers = {}) {
         this.beforeLoadFn()
-        readRDF(url, headers)
-		.then(quadStream => {
-			// Load prefixes
-			quadStream.on('prefix', (prefix, ns) => {
-                this.onPrefixFn(prefix, ns)
-			}).on('end', () => {
-                this.onPrefixEndFn()
-			})
-			// Load data
-			quadStream.on('data', quad => {
-				this.onDataFn(quad)
-			}).on('end', async () => {
-                await this.onDataEndFn()
-            });
-		})
-		.catch(error => {
-			console.error('Error reading RDF data:', error);
-            throw error
-		});
+        const result = await readRDF(url, headers)
+
+        // Bubble up error
+        if (!result.success) {
+            return result  
+        }
+
+        const quadStream = result.quadStream
+        // Load prefixes
+        quadStream.on('prefix', (prefix, ns) => {
+            this.onPrefixFn(prefix, ns)
+        }).on('end', () => {
+            this.onPrefixEndFn()
+        })
+        // Load data
+        quadStream.on('data', quad => {
+            this.onDataFn(quad)
+        }).on('end', async () => {
+            await this.onDataEndFn()
+        });
+        
+        return result
     }
 
     /**

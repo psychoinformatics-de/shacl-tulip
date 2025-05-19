@@ -99,6 +99,36 @@ describe('FormBase', () => {
     });
 
 
+    it('should handle functionality for clearing/removing correctly', async () => {
+        let class_uri = 'https://concepts.datalad.org/s/social/unreleased/Person'
+        let subject_uri = 'http://example.com/testPerson'
+        let subject2_uri = 'http://example.com/testPerson2'
+        let predicate_uri = 'https://concepts.datalad.org/s/social/unreleased/given_name'
+        // Test add a subject and objects
+        form.addSubject(class_uri, subject_uri)
+        form.addPredicate(class_uri, subject_uri, predicate_uri)
+        form.content[class_uri][subject_uri][predicate_uri][0] = "TestName"
+        form.addObject(class_uri, subject_uri, predicate_uri)
+        // Test clearing the subject
+        form.clearSubject(class_uri, subject_uri)
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([null])
+        // Test removing the subject
+        // First add one more subject, then remove it, then remove the original subject
+        form.addSubject(class_uri, subject2_uri)
+        expect(Object.keys(form.content[class_uri])).toContain(subject_uri)
+        expect(Object.keys(form.content[class_uri])).toContain(subject2_uri)
+        form.removeSubject(class_uri, subject2_uri)
+        expect(Object.keys(form.content[class_uri])).not.toContainEqual(subject2_uri)
+        // now remove original subject, after which the whole node should also be removed
+        form.removeSubject(class_uri, subject_uri)
+        expect(Object.keys(form.content)).not.toContainEqual(class_uri)
+    })
+
+
+
+    
+
+
 
 
 

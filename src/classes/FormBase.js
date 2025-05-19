@@ -84,11 +84,11 @@ export class FormBase {
         }
         // clear node instance at provided index
         else {
-            objectKeysToNull(this.content[class_uri][subject_uri], setVal)
+            this._objectKeysToNull(this.content[class_uri][subject_uri], setVal)
         }
     }
 
-    static objectKeysToNull(obj, setVal = [null]) {
+    _objectKeysToNull(obj, setVal = [null]) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 obj[key] = setVal;

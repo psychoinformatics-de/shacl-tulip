@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, vi} from 'vitest';
-import { Store, Writer, DataFactory } from 'n3';
-const { namedNode, literal, blankNode, quad } = DataFactory;
+import { DataFactory } from 'n3';
 import { RDF, XSD } from '@/modules/namespaces';
 import { RdfDataset } from '@/classes/RdfDataset';
 import httpServer from 'http-server';
-
+const { namedNode, literal, blankNode, quad } = DataFactory;
 let server;
 const PORT = 8080;
 const HOST = 'localhost';

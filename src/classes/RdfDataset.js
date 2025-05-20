@@ -111,7 +111,7 @@ export class RdfDataset {
 
     /**
      * Add an RDF quad to the dataset
-     * @param {import("rdf-ext").Quad} quad - The RDF quad to add.
+     * @param {} quad - The RDF quad to add.
      */
     addQuad(quad) {
         this.data.graph.addQuad(quad)

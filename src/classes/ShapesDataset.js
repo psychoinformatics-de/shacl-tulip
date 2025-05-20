@@ -4,7 +4,8 @@
 
 import { RdfDataset } from './RdfDataset'
 import { SHACL, RDF } from '../modules/namespaces';
-import rdf from 'rdf-ext';
+import { DataFactory } from 'n3';
+const { namedNode, literal, blankNode } = DataFactory;
 import { toIRI} from '../modules/utils';
 
 export class ShapesDataset extends RdfDataset {
@@ -102,17 +103,17 @@ export class ShapesDataset extends RdfDataset {
             // if sh:nodeKind == sh:Literal
             if (propertyShape[SHACL.nodeKind.value] == SHACL.Literal.value) {
                 // sh:nodeKind == sh:Literal
-                nodeFunc = rdf.literal
+                nodeFunc = literal
                 // sh:datatype exists
                 if (propertyShape.hasOwnProperty(SHACL.datatype.value)) {
                     dt = propertyShape[SHACL.datatype.value]
                 }
             } else if (propertyShape[SHACL.nodeKind.value] == SHACL.IRI.value) {
                 // sh:nodeKind == sh:IRI
-                nodeFunc = rdf.namedNode
+                nodeFunc = namedNode
             } else if (propertyShape[SHACL.nodeKind.value] == SHACL.BlankNode.value) {
                 // sh:nodeKind == sh:BlankNode
-                nodeFunc = rdf.blankNode
+                nodeFunc = blankNode
             } else if (propertyShape[SHACL.nodeKind.value] == SHACL.BlankNodeOrIRI.value) {
                 // sh:nodeKind == sh:BlankNodeOrIRI
                 // If the same property shape has a sh:class field, and if that class
@@ -128,26 +129,26 @@ export class ShapesDataset extends RdfDataset {
                     var associatedNodeShape = this.data.nodeShapes[toIRI(shClass, this.data.prefixes)]
                     var hasIdField = associatedNodeShape.properties.find((prop) => prop[SHACL.path.value] == id_uri)
                     if (hasIdField) {
-                        nodeFunc = rdf.namedNode
+                        nodeFunc = namedNode
                     } else {
-                        nodeFunc = rdf.blankNode
+                        nodeFunc = blankNode
                     }
                 } else {
-                    nodeFunc = rdf.namedNode
+                    nodeFunc = namedNode
                 }
              } else {
                 console.error(`\t- NodeKind not supported: ${propertyShape[SHACL.nodeKind.value]}\n\t\tAdding triple with literal object to graphData`)
-                nodeFunc = rdf.literal
+                nodeFunc = literal
             }
         } else if (propertyShape.hasOwnProperty(SHACL.in.value)) {
             // This is a temporary workaround; should definitely not be permanent
             // Assume Literal nodekind for any arrays
             console.log(`\t- NodeKind not found for property shape: ${property_uri}; found 'sh:in'. Setting to default literal`)
-            nodeFunc = rdf.literal
+            nodeFunc = literal
         }
         else {
             console.log(`\t- NodeKind not found for property shape: ${property_uri}. Setting to default literal`)
-            nodeFunc = rdf.literal
+            nodeFunc = literal
         }
         return [nodeFunc, dt]
     }

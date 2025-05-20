@@ -9,8 +9,6 @@
 
 import formats from '@rdfjs/formats-common'
 import fetch from '@rdfjs/fetch-lite'
-import formatsPretty from '@rdfjs/formats/pretty.js'
-import rdf from 'rdf-ext'
 
 export async function readRDF(file_url, headers = { "Content-Type": "text/turtle" }) {
     const url = file_url;

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi} from 'vitest';
-import rdf from 'rdf-ext';
+import { Store, Writer, DataFactory } from 'n3';
+const { namedNode, literal, blankNode, quad } = DataFactory;
 import { RDF, XSD } from '@/modules/namespaces';
 import { RdfDataset } from '@/classes/RdfDataset';
 import httpServer from 'http-server';
@@ -25,27 +26,27 @@ describe('RdfDataset', () => {
 
     it('should add a quad to the dataset', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const subject = rdf.namedNode('http://example.com/subject');
-        const predicate = rdf.namedNode('http://example.com/predicate');
-        const object = rdf.literal('example', XSD.string);
-        const quad = rdf.quad(subject, predicate, object);
+        const subject = namedNode('http://example.com/subject');
+        const predicate = namedNode('http://example.com/predicate');
+        const object = literal('example', XSD.string);
+        const q = quad(subject, predicate, object);
 
-        dataset.addQuad(quad);
+        dataset.addQuad(q);
 
         expect(dataset.data.graph.size).toBe(1);
-        expect(dataset.data.graph.has(quad)).toBe(true);
+        expect(dataset.data.graph.has(q)).toBe(true);
     });
 
     it('should correctly detect an RDF list', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const node1 = rdf.blankNode();
-        const node2 = rdf.blankNode();
-        const node3 = rdf.namedNode(RDF.nil.value);
+        const node1 = blankNode();
+        const node2 = blankNode();
+        const node3 = namedNode(RDF.nil.value);
 
-        dataset.addQuad(rdf.quad(node1, RDF.first, rdf.literal("Item 1")));
-        dataset.addQuad(rdf.quad(node1, RDF.rest, node2));
-        dataset.addQuad(rdf.quad(node2, RDF.first, rdf.literal("Item 2")));
-        dataset.addQuad(rdf.quad(node2, RDF.rest, node3));
+        dataset.addQuad(quad(node1, RDF.first, literal("Item 1")));
+        dataset.addQuad(quad(node1, RDF.rest, node2));
+        dataset.addQuad(quad(node2, RDF.first, literal("Item 2")));
+        dataset.addQuad(quad(node2, RDF.rest, node3));
 
         expect(dataset.isRdfList(node1)).toBe(true);
         expect(dataset.isRdfList(node2)).toBe(true);
@@ -54,14 +55,14 @@ describe('RdfDataset', () => {
 
     it('should convert an RDF list to an array', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const node1 = rdf.blankNode();
-        const node2 = rdf.blankNode();
-        const node3 = rdf.namedNode(RDF.nil.value);
+        const node1 = blankNode();
+        const node2 = blankNode();
+        const node3 = namedNode(RDF.nil.value);
 
-        dataset.addQuad(rdf.quad(node1, RDF.first, rdf.literal("Item 1")));
-        dataset.addQuad(rdf.quad(node1, RDF.rest, node2));
-        dataset.addQuad(rdf.quad(node2, RDF.first, rdf.literal("Item 2")));
-        dataset.addQuad(rdf.quad(node2, RDF.rest, node3));
+        dataset.addQuad(quad(node1, RDF.first, literal("Item 1")));
+        dataset.addQuad(quad(node1, RDF.rest, node2));
+        dataset.addQuad(quad(node2, RDF.first, literal("Item 2")));
+        dataset.addQuad(quad(node2, RDF.rest, node3));
 
         const result = dataset.rdfListToArray(node1);
         expect(result).toEqual(["Item 1", "Item 2"]);
@@ -69,12 +70,12 @@ describe('RdfDataset', () => {
 
     it('should serialize the dataset to Turtle format', async () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const subject = rdf.namedNode('http://example.com/subject');
-        const predicate = rdf.namedNode('http://example.com/predicate');
-        const object = rdf.literal('example', XSD.string);
-        const quad = rdf.quad(subject, predicate, object);
+        const subject = namedNode('http://example.com/subject');
+        const predicate = namedNode('http://example.com/predicate');
+        const object = literal('example', XSD.string);
+        const q = quad(subject, predicate, object);
 
-        dataset.addQuad(quad);
+        dataset.addQuad(q);
         const serializedGraph = await dataset.serializeGraph();
         expect(serializedGraph).toContain('<http://example.com/subject>');
         expect(serializedGraph).toContain('<http://example.com/predicate>');
@@ -91,15 +92,31 @@ describe('RdfDataset', () => {
         expect(dataset.data.graphLoaded).toBe(false);
         expect(dataset.data.prefixesLoaded).toBe(false);
         const fileUrl = `http://${HOST}:${PORT}/tests/mockData.ttl`
+        // const graphLoadedHandler = vi.fn();
+        // dataset.addEventListener('graphLoaded', graphLoadedHandler);
+        // await dataset.loadRDF(fileUrl);
+        // await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
+
+
+        // Add listener to await graph load
         const graphLoadedHandler = vi.fn();
-        dataset.addEventListener('graphLoaded', graphLoadedHandler);
-        dataset.loadRDF(fileUrl);
-        await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
+        const graphLoadedPromise = new Promise(resolve => {
+            dataset.addEventListener('graphLoaded', event => {
+                graphLoadedHandler(event);
+                resolve();
+            });
+        });
+
+        await dataset.loadRDF(fileUrl);
+        await graphLoadedPromise;
+        
+        
         expect(graphLoadedHandler).toHaveBeenCalledTimes(1);
-        expect(dataset.data.graph.size).toBe(2);
         expect(dataset.data.prefixes['ex']).toBe('http://example.com/');
         expect(dataset.data.graphLoaded).toBe(true);
         expect(dataset.data.prefixesLoaded).toBe(true);
+        expect(dataset.data.graph.size).toBe(2);
+        console.log('Quads in graph:', dataset.data.graph.getQuads(null, null, null, null));
 
         console.log(`Closing server on http://${HOST}:${PORT}`);
         server.close();
@@ -110,30 +127,30 @@ describe('RdfDataset', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
         const prefixHandler = vi.fn();
         dataset.addEventListener('prefix', prefixHandler);
-        dataset.onPrefixFn('ex', rdf.namedNode('http://example.com/'));
+        dataset.onPrefixFn('ex', namedNode('http://example.com/'));
         expect(prefixHandler).toHaveBeenCalledTimes(1);
         expect(dataset.data.prefixes['ex']).toBe('http://example.com/');
     });
 
     it('should resolve blank nodes correctly', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const blankNode = rdf.blankNode();
-        const predicate = rdf.namedNode('http://example.com/predicate');
-        const object = rdf.literal('value');
+        const bn = blankNode();
+        const predicate = namedNode('http://example.com/predicate');
+        const object = literal('value');
         
-        dataset.addQuad(rdf.quad(blankNode, predicate, object));
+        dataset.addQuad(quad(bn, predicate, object));
 
-        const resolved = dataset.resolveBlankNode(blankNode);
+        const resolved = dataset.resolveBlankNode(bn);
         expect(resolved[predicate.value]).toBe('value');
     });
 
     it('should retrieve subject triples', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const subject = rdf.namedNode('http://example.com/subject');
-        const predicate = rdf.namedNode('http://example.com/predicate');
-        const object = rdf.literal('example');
+        const subject = namedNode('http://example.com/subject');
+        const predicate = namedNode('http://example.com/predicate');
+        const object = literal('example');
 
-        dataset.addQuad(rdf.quad(subject, predicate, object));
+        dataset.addQuad(quad(subject, predicate, object));
 
         const triples = dataset.getSubjectTriples(subject);
         expect(triples.length).toBe(1);
@@ -142,11 +159,11 @@ describe('RdfDataset', () => {
 
     it('should retrieve object triples', () => {
         console.log(`Running RdfDataset Test ${i++}...`)
-        const subject = rdf.namedNode('http://example.com/subject');
-        const predicate = rdf.namedNode('http://example.com/predicate');
-        const object = rdf.literal('example');
+        const subject = namedNode('http://example.com/subject');
+        const predicate = namedNode('http://example.com/predicate');
+        const object = literal('example');
 
-        dataset.addQuad(rdf.quad(subject, predicate, object));
+        dataset.addQuad(quad(subject, predicate, object));
 
         const triples = dataset.getObjectTriples(object);
         expect(triples.length).toBe(1);

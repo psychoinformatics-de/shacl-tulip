@@ -1,8 +1,8 @@
-import rdf from 'rdf-ext';
 import { readRDF } from '../modules/io'
 import { RDF, XSD } from '../modules/namespaces';
 import { toCURIE } from '../modules/utils';
-import formatsPretty from '@rdfjs/formats/pretty.js'
+import { Store, Writer, DataFactory } from 'n3';
+const { namedNode, literal } = DataFactory;
 
 /**
  * A class wrapping an RDF dataset (quad-store) from the `rdf-ext` library.
@@ -13,8 +13,6 @@ export class RdfDataset {
      */
     constructor(data = {}) {
         this.data = data;
-        this.rdfPretty = rdf.clone();
-        this.rdfPretty.formats.import(formatsPretty);
         this.data.prefixes = {};
         this.data.serializedGraph = '';
         this.data.graphLoaded = false;
@@ -37,11 +35,11 @@ export class RdfDataset {
 
     /**
      * Create a quad store compliant with the [RDF/JS dataset specification](https://rdf.js.org/dataset-spec/)
-     * via the `rdf-ext` package
-     * @returns {import("rdf-ext").DatasetCore} The RDF dataset instance.
+     * via the `n3` package
+     * @returns {} The RDF dataset instance.
      */
     createDataset() {
-        return rdf.dataset()
+        return new Store();
     }
     /**
      * Loads RDF data from a given URL and processes prefixes and quads.
@@ -60,16 +58,14 @@ export class RdfDataset {
         // Load prefixes
         quadStream.on('prefix', (prefix, ns) => {
             this.onPrefixFn(prefix, ns)
-        }).on('end', () => {
-            this.onPrefixEndFn()
-        })
-        // Load data
-        quadStream.on('data', quad => {
+        }).on('data', quad => {
             this.onDataFn(quad)
-        }).on('end', async () => {
-            await this.onDataEndFn()
+        }).on('end', () => {
+            this.onDataEndFn()
+            this.onPrefixEndFn()
+        }).on('error', err => {
+            console.error('Error while processing quadStream:', err);
         });
-        
         return result
     }
 
@@ -83,7 +79,7 @@ export class RdfDataset {
     /**
      * Process an RDF prefix.
      * @param {string} prefix - The prefix string.
-     * @param {import("rdf-ext").NamedNode} ns - The namespace associated with the prefix.
+     * @param {} ns - The namespace associated with the prefix.
      */
     onPrefixFn(prefix, ns) {
         this.data.prefixes[prefix] = ns.value;
@@ -96,29 +92,29 @@ export class RdfDataset {
 
     /**
      * Process an RDF quad
-     * @param {import("rdf-ext").Quad} quad - The RDF quad.
+     * @param {} quad - The RDF quad.
      */
     onDataFn(quad) {
         // The first following line, moved here from shacl-vue's graphdata composable,
         // was an attempt to solve https://hub.datalad.org/datalink/annotate-trr379-demo/issues/32.
         // But it was a faulty attempt, since the object was different. Still, leaving it here since
         // deleting matches would prospectively solve the duplication of named node or literal objects
-        this.data.graph.deleteMatches(quad.subject, quad.predicate, quad.object, null)
+        // this.data.graph.removeMatches(quad.subject, quad.predicate, quad.object, null)
         this.addQuad(quad)
         this.dispatchEvent(new CustomEvent('quad', { detail: quad }));
     }
-    async onDataEndFn() {
-        await this.updateSerializedGraph()
+    
+    onDataEndFn() {
         this.data.graphLoaded = true
         this.dispatchEvent(new CustomEvent('graphLoaded', { detail: this.data.graph }));
     }
 
     /**
      * Add an RDF quad to the dataset
-     * @param {import("rdf-ext").Quad} quad - The RDF quad to add.
+     * @param {} quad - The RDF quad to add.
      */
     addQuad(quad) {
-        this.data.graph.add(quad)
+        this.data.graph.addQuad(quad)
     }
 
     /**
@@ -126,33 +122,35 @@ export class RdfDataset {
      * @returns {Promise<string>} The serialized RDF graph in Turtle format.
      */
     async serializeGraph() {
-        return (await this.rdfPretty.io.dataset.toText('text/turtle', this.data.graph)).trim()
-    }
-
-    async updateSerializedGraph() {
-        this.data.serializedGraph = (await this.rdfPretty.io.dataset.toText('text/turtle', this.data.graph)).trim()
+        // Using N3.Writer to serialize graph to Turtle
+        return new Promise((resolve, reject) => {
+            const writer = new Writer({ prefixes: this.data.prefixes });
+            writer.addQuads(this.data.graph.getQuads(null, null, null, null));
+            writer.end((error, result) => {
+                if (error) reject(error);
+                else resolve(result.trim());
+            });
+        });
     }
 
     /**
      * Checks if a given RDF node represents an RDF list.
-     * @param {import("rdf-ext").Term} node - The RDF node to check.
+     * @param {} node - The RDF node to check.
      * @returns {boolean} True if the node represents an RDF list, otherwise false.
      */
     isRdfList(node) {
         let hasFirst = false;
         let hasRest = false;
-        this.data.graph.forEach((quad) => {
-            if (quad.subject.equals(node)) {
-                if (quad.predicate.value === RDF.first.value) hasFirst = true;
-                if (quad.predicate.value === RDF.rest.value) hasRest = true;
-            }
+        this.data.graph.getQuads(node, null, null, null).forEach((quad) => {
+            if (quad.predicate.value === RDF.first.value) hasFirst = true;
+            if (quad.predicate.value === RDF.rest.value) hasRest = true;
         });
         return hasFirst && hasRest;
     };
     
     /**
      * Converts an RDF list to an array.
-     * @param {import("rdf-ext").Term} startNode - The starting node of the RDF list.
+     * @param {} startNode - The starting node of the RDF list.
      * @returns {Array} The converted RDF list as an array.
      */
     rdfListToArray(startNode) {
@@ -161,53 +159,38 @@ export class RdfDataset {
         while (currentNode && currentNode.value !== RDF.nil.value) {
             let listItem = null;
             // Get the first element in the RDF list
-            this.data.graph.forEach((quad) => {
-                if (quad.subject.equals(currentNode) && quad.predicate.value === RDF.first.value) {
-                    // Resolve blank nodes recursively, but handle literals and IRIs separately
-                    if (quad.object.termType === "BlankNode") {
-                        listItem = this.resolveBlankNode(quad.object, this.data.graph);
-                    } else if (quad.object.termType === "Literal") {
-                        listItem = quad.object.value; // Store literal value
-                    } else if (quad.object.termType === "NamedNode") {
-                        listItem = quad.object.value; // Store IRI as a string
+            this.data.graph.getQuads(currentNode, RDF.first, null, null).forEach(quad => {
+                if (quad.object.termType === 'BlankNode') {
+                    if (this.isRdfList(quad.object)) {
+                        listItem = this.rdfListToArray(quad.object);
+                    } else {
+                        listItem = this.resolveBlankNode(quad.object);
                     }
+                } else if (quad.object.termType === 'Literal' || quad.object.termType === 'NamedNode') {
+                    listItem = quad.object.value;
                 }
             });
             if (listItem !== null) {
                 listItems.push(listItem);
             }
             // Move to the next item in the list (rdf:rest)
-            let nextNode = null;
-            this.data.graph.forEach((quad) => {
-                if (quad.subject.equals(currentNode) && quad.predicate.value === RDF.rest.value) {
-                    nextNode = quad.object;
-                }
-            });
-            currentNode = nextNode;
+            const restQuads = this.data.graph.getQuads(currentNode, RDF.rest, null, null);
+            currentNode = restQuads.length > 0 ? restQuads[0].object : null;
         }
         return listItems;
     };
     
     resolveBlankNode(blankNode) {
         let resolvedObject = {};
-        this.data.graph.forEach((quad) => {
-            if (quad.subject.equals(blankNode)) {
-                const predicate = quad.predicate.value;
-                const object = quad.object;
-    
-                // If the object is a blank node, resolve it recursively
-                if (object.termType === "BlankNode") {
-                    // Check if it's an RDF list and convert it to an array
-                    if (this.isRdfList(object)) {
-                        resolvedObject[predicate] = this.rdfListToArray(object);
-                    } else {
-                        resolvedObject[predicate] = this.resolveBlankNode(object);
-                    }
-                } else if (object.termType === "Literal") {
-                    resolvedObject[predicate] = object.value; // Handle literal values
-                } else if (object.termType === "NamedNode") {
-                    resolvedObject[predicate] = object.value; // Handle IRIs as strings
+        this.data.graph.getQuads(blankNode, null, null, null).forEach(({ predicate, object }) => {
+            if (object.termType === 'BlankNode') {
+                if (this.isRdfList(object)) {
+                    resolvedObject[predicate.value] = this.rdfListToArray(object);
+                } else {
+                    resolvedObject[predicate.value] = this.resolveBlankNode(object);
                 }
+            } else if (object.termType === 'Literal' || object.termType === 'NamedNode') {
+                resolvedObject[predicate.value] = object.value;
             }
         });
         return resolvedObject;
@@ -215,25 +198,16 @@ export class RdfDataset {
 
     getLiteralAndNamedNodes(predicate, propertyClass, prefixes) {
         var propClassCurie = toCURIE(propertyClass, prefixes)
-        // a) use the literal node with xsd data type
-        const literalNodes = rdf.grapoi({ dataset: this.data.graph })
-            .hasOut(predicate, rdf.literal(String(propClassCurie), XSD.anyURI))
-            .quads();
-        // b) and the named node
-        const uriNodes = rdf.grapoi({ dataset: this.data.graph })
-            .hasOut(predicate, rdf.namedNode(propertyClass))
-            .quads();
-        // return as a concatenated array of quads
-        return Array.from(literalNodes).concat(Array.from(uriNodes))
+        const literalQuads = this.data.graph.getQuads(null, predicate, literal(String(propClassCurie), XSD.anyURI), null)
+        const uriQuads = this.data.graph.getQuads(null, predicate, namedNode(propertyClass), null)
+        return literalQuads.concat(uriQuads)
     }
     
     getSubjectTriples(someTerm) {
-        const quads = rdf.grapoi({ dataset: this.data.graph, term: someTerm }).out().quads();
-        return Array.from(quads)
+        return this.data.graph.getQuads(someTerm, null, null, null);
     }
     
     getObjectTriples(someTerm) {
-        const quads = rdf.grapoi({ dataset: this.data.graph, term: someTerm }).in().quads();
-        return Array.from(quads)
+        return this.data.graph.getQuads(null, null, someTerm, null);
     }
 }

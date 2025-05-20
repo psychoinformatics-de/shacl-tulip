@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach} from 'vitest';
 import { ShapesDataset } from '@/classes/ShapesDataset';
-import rdf from 'rdf-ext'
+import { DataFactory } from 'n3';
+const { literal, blankNode } = DataFactory;
 import httpServer from 'http-server';
 let server;
 const PORT = 8082;
@@ -84,14 +85,14 @@ describe('ShapesDataset', () => {
         )
 
         expect(nk1[0]).toBeTypeOf('function')
-        expect(nk1[0]).toEqual(rdf.literal)
+        expect(nk1[0]).toEqual(literal)
         var nk2 = dataset.getPropertyNodeKind(
             'https://concepts.datalad.org/s/social/unreleased/Person',
             'https://concepts.datalad.org/s/things/v1/attributes',
             'https://concepts.datalad.org/s/things/v1/id'
         )
         expect(nk2[0]).toBeTypeOf('function')
-        expect(nk2[0]).toEqual(rdf.blankNode)
+        expect(nk2[0]).toEqual(blankNode)
         server.close();
     });
 

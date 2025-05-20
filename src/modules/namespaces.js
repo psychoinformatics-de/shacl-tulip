@@ -4,9 +4,20 @@
  */
 
 
-import rdf from 'rdf-ext';
-export const SHACL = rdf.namespace('http://www.w3.org/ns/shacl#');
-export const RDF = rdf.namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
-export const DASH = rdf.namespace('http://datashapes.org/dash#');
-export const RDFS = rdf.namespace('http://www.w3.org/2000/01/rdf-schema#');
-export const XSD = rdf.namespace('http://www.w3.org/2001/XMLSchema#');
+import { DataFactory } from 'n3';
+const { namedNode } = DataFactory;
+
+export function namespace(baseIRI) {
+  return new Proxy({}, {
+    get(_, prop) {
+      // Return a NamedNode for every accessed property
+      return namedNode(baseIRI + prop);
+    }
+  });
+}
+
+export const SHACL = namespace('http://www.w3.org/ns/shacl#');
+export const RDF = namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+export const DASH = namespace('http://datashapes.org/dash#');
+export const RDFS = namespace('http://www.w3.org/2000/01/rdf-schema#');
+export const XSD = namespace('http://www.w3.org/2001/XMLSchema#');

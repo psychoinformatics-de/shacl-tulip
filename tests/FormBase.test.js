@@ -3,8 +3,9 @@ import { FormBase } from '@/classes/FormBase';
 import { ShapesDataset } from '@/classes/ShapesDataset';
 import { RdfDataset } from '@/classes/RdfDataset';
 import { RDF } from '@/modules/namespaces'
-import rdf from 'rdf-ext'
 import httpServer from 'http-server';
+import { DataFactory } from 'n3';
+const { namedNode } = DataFactory;
 let server;
 const PORT = 8083;
 const HOST = 'localhost';
@@ -82,7 +83,7 @@ describe('FormBase', () => {
     it('should convert an RDF dataset correctly to form content, and save it back', () => {
         let class_uri = 'https://concepts.datalad.org/s/social/unreleased/Person'
         let subject_uri = 'http://example.com/testPerson'
-        let subject_term = rdf.namedNode(subject_uri)
+        let subject_term = namedNode(subject_uri)
         let predicate_uri = 'https://concepts.datalad.org/s/social/unreleased/given_name'
         form.quadsToFormData(class_uri, subject_term, rdfDS)
         expect(Object.keys(form.content)).toContain(class_uri)

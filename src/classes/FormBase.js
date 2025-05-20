@@ -2,9 +2,10 @@
  * 
  */
 
-import rdf from 'rdf-ext';
 import { RDF } from '../modules/namespaces';
 import { isEmptyObject, toIRI} from '../modules/utils';
+import { DataFactory } from 'n3';
+const { namedNode, blankNode, quad } = DataFactory;
 
 export class FormBase {
 
@@ -140,7 +141,7 @@ export class FormBase {
         // Identify the record's subject (named or blank node)
         var subject = this._getRecordSubjectTerm(subject_uri, this.content[class_uri][subject_uri])
         // Add the triple stating the subject is of type class
-        let firstQuad = rdf.quad(subject, rdf.namedNode(RDF.type.value), rdf.namedNode(class_uri))
+        let firstQuad = quad(subject, namedNode(RDF.type.value), namedNode(class_uri))
         quadArray.push(firstQuad)
         // Now we need to add all triples relating to the properties of the record.
         for (var triple_predicate of Object.keys(this.content[class_uri][subject_uri])) {
@@ -161,7 +162,7 @@ export class FormBase {
                 continue
             }
             // now set the predicate as a named node
-            var predicate = rdf.namedNode(triple_predicate)
+            var predicate = namedNode(triple_predicate)
             // In order to set the node type of the object, we first need to figure it out
             var [nodeFunc, dt] = shapesDS.getPropertyNodeKind(class_uri, triple_predicate, this.ID_IRI)
             // Now we can create the object nodes for each property
@@ -169,13 +170,13 @@ export class FormBase {
                 // val: all values of a given property of an identifiable object
                 let triple_object
                 if (dt) {
-                    triple_object = nodeFunc(val, rdf.namedNode(dt))
+                    triple_object = nodeFunc(val, namedNode(dt))
                 } else {
                     triple_object = nodeFunc(val)
                 }
                 // and finally we can add the quads to the store
-                let quad = rdf.quad(subject, predicate, triple_object)
-                quadArray.push(quad)
+                let q = quad(subject, predicate, triple_object)
+                quadArray.push(q)
             }
         }
         return quadArray
@@ -202,9 +203,9 @@ export class FormBase {
         var subject
         if (Object.keys(record).indexOf(this.ID_IRI) >= 0) {
             var subject_iri = record[this.ID_IRI][0]
-            subject = rdf.namedNode(subject_iri)
+            subject = namedNode(subject_iri)
         } else {
-            subject = rdf.blankNode(record_id)
+            subject = blankNode(record_id)
         }
         return subject
     }
@@ -258,7 +259,7 @@ export class FormBase {
         if (this.content[class_uri]) {
             // If we are in edit mode, the first step is to delete existing quads from graphData
             if (editMode) {
-                RdfDS.data.graph.deleteMatches(rdf.namedNode(node_uri), null, null, null)
+                RdfDS.data.graph.deleteMatches(namedNode(node_uri), null, null, null)
             }
 
             // Then we generate the quads
@@ -285,9 +286,9 @@ export class FormBase {
             // - for each triple in oldTriples: create a new one with same subject and predicate
             //   and with new IRI as object, then delete the old triple
             if (editMode && subject_iri !== null && subject_iri !== node_uri) {
-                var objectQuads = RdfDS.getObjectTriples(rdf.namedNode(node_uri))
+                var objectQuads = RdfDS.getObjectTriples(namedNode(node_uri))
                 objectQuads.forEach((quad) => {
-                    let new_quad = rdf.quad(quad.subject, quad.predicate, subject)
+                    let new_quad = quad(quad.subject, quad.predicate, subject)
                     RdfDS.data.graph.delete(quad)
                     RdfDS.data.graph.add(new_quad)
                 });

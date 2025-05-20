@@ -7,7 +7,7 @@
 import { DataFactory } from 'n3';
 const { namedNode } = DataFactory;
 
-function namespace(baseIRI) {
+export function namespace(baseIRI) {
   return new Proxy({}, {
     get(_, prop) {
       // Return a NamedNode for every accessed property

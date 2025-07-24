@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach} from 'vitest';
 import { ShapesDataset } from '@/classes/ShapesDataset';
-import { DataFactory } from 'n3';
-const { literal, blankNode } = DataFactory;
+import { DataFactory, NamedNode } from 'n3';
+const { literal, blankNode, namedNode } = DataFactory;
 import httpServer from 'http-server';
 let server;
 const PORT = 8082;
@@ -28,7 +28,7 @@ describe('ShapesDataset', () => {
         await new Promise(resolve => dataset.addEventListener('graphLoaded', resolve));
         expect(dataset.data.graphLoaded).toBe(true);
         expect(dataset.data.prefixesLoaded).toBe(true);
-        expect(dataset.data.graph.size).toBe(318); // number of quads in the mockShapes.ttl file
+        expect(dataset.data.graph.size).toBe(345); // number of quads in the mockShapes.ttl file
         // Test content of all loaded variables
         expect(dataset.data.nodeShapeNames).toEqual(
             {
@@ -76,16 +76,15 @@ describe('ShapesDataset', () => {
             }
         )
         // Test getPropertyNodeKind
-
-        // expect(getPropertyNodeKind(class_uri, property_uri, id_uri))
+        // Test literal nodekind
         var nk1 = dataset.getPropertyNodeKind(
             'https://concepts.datalad.org/s/social/unreleased/Person',
             'https://concepts.datalad.org/s/social/unreleased/honorific_name_prefix',
             'https://concepts.datalad.org/s/things/v1/id'
         )
-
         expect(nk1[0]).toBeTypeOf('function')
         expect(nk1[0]).toEqual(literal)
+        // Test blankNode
         var nk2 = dataset.getPropertyNodeKind(
             'https://concepts.datalad.org/s/social/unreleased/Person',
             'https://concepts.datalad.org/s/things/v1/attributes',
@@ -93,6 +92,23 @@ describe('ShapesDataset', () => {
         )
         expect(nk2[0]).toBeTypeOf('function')
         expect(nk2[0]).toEqual(blankNode)
+        // Test sh:or with ALL elements in array containing sh:class
+        var nk3 = dataset.getPropertyNodeKind(
+            'https://concepts.datalad.org/s/social/unreleased/Person',
+            'https://concepts.datalad.org/s/things/v1/person_type',
+            'https://concepts.datalad.org/s/things/v1/id'
+        )
+        expect(nk3[0]).toBeTypeOf('function')
+        expect(nk3[0]).toEqual(namedNode)
+        // Test sh:or with NOT all elements in array containing sh:class
+        var nk4 = dataset.getPropertyNodeKind(
+            'https://concepts.datalad.org/s/social/unreleased/Person',
+            'https://concepts.datalad.org/s/things/v1/belongs_to',
+            'https://concepts.datalad.org/s/things/v1/id'
+        )
+        expect(nk4[0]).toBeTypeOf('function')
+        expect(nk4[0]).toEqual(literal)
+
         server.close();
     });
 

@@ -145,6 +145,15 @@ export class ShapesDataset extends RdfDataset {
             // Assume Literal nodekind for any arrays
             console.log(`\t- NodeKind not found for property shape: ${property_uri}; found 'sh:in'. Setting to default literal`)
             nodeFunc = literal
+        } else if (
+            propertyShape.hasOwnProperty(SHACL.or.value) &&
+            Array.isArray(propertyShape[SHACL.or.value]) &&
+            propertyShape[SHACL.or.value].every(obj => obj.hasOwnProperty(SHACL.class.value))
+        ) {
+            // This is a temporary solution to exactly match the property values entered using `shacl-vue`'s `ShaclORClassEditor`
+            // A future replacement should account for a generic `sh:or`
+            console.log(`\t- NodeKind not found for property shape: ${property_uri}; found 'sh:or' with every element containing 'sh:class'. Setting to namedNode`)
+            nodeFunc = namedNode
         }
         else {
             console.log(`\t- NodeKind not found for property shape: ${property_uri}. Setting to default literal`)

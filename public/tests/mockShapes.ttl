@@ -166,7 +166,19 @@ dlsocial:Person a sh:NodeShape ;
             sh:maxCount 1 ;
             sh:nodeKind sh:IRI ;
             sh:order 2 ;
-            sh:path dlspatial:at_location ] ;
+            sh:path dlspatial:at_location ],
+        [ sh:description "The type of person, which is one of two classes: a 'Parent' or a 'Child'" ;
+            sh:maxCount 1 ;
+            sh:minCount 1 ;
+            sh:or ( [ sh:class ex:Parent ] [ sh:class ex:Child ] ) ;
+            sh:order 1 ;
+            sh:path dlthings:person_type ],
+        [ sh:description "The organization that the Person belongs to" ;
+            sh:maxCount 1 ;
+            sh:minCount 1 ;
+            sh:or ( [ sh:class ex:Organization ] [ sh:nodeKind sh:Literal ; sh:datatype xsd:string ] ) ;
+            sh:order 1 ;
+            sh:path dlthings:belongs_to ] ;
     sh:targetClass dlsocial:Person .
 
 

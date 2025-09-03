@@ -260,11 +260,15 @@ export class FormBase {
         if (this.content[class_uri]) {
             // If we are in edit mode, the first step is to delete existing quads from graphData
             if (editMode) {
-                RdfDS.data.graph.deleteMatches(namedNode(node_uri), null, null, null)
+                var s = this._getRecordSubjectTerm(node_uri, this.content[class_uri][node_uri])
+                if (s.termType === "NamedNode") {
+                    RdfDS.data.graph.deleteMatches(namedNode(node_uri), null, null, null)
+                } else {
+                    RdfDS.data.graph.deleteMatches(blankNode(node_uri), null, null, null)
+                }
             }
 
             // Then we generate the quads
-            
             var quads = this.formNodeToQuads(class_uri, node_uri, shapesDS)
             // and add them to the dataset
             quads.forEach(quad => {

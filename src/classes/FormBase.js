@@ -146,10 +146,9 @@ export class FormBase {
         // Now we need to add all triples relating to the properties of the record.
         for (var triple_predicate of Object.keys(this.content[class_uri][subject_uri])) {
             // triple_predicate: all properties of an identifiable object
-            // Only process entered values, i.e. ignore property if it has value: [null]
+            // Only process entered values, i.e. ignore property if all array elements are falsy
             if (Array.isArray(this.content[class_uri][subject_uri][triple_predicate]) &&
-                this.content[class_uri][subject_uri][triple_predicate].length == 1 &&
-                this.content[class_uri][subject_uri][triple_predicate][0] === null) {
+                this.content[class_uri][subject_uri][triple_predicate].every(value => !value)) {
                 continue;
             }
             // Don't add id_iri triple, since it would have been added already if it exists
@@ -168,6 +167,8 @@ export class FormBase {
             // Now we can create the object nodes for each property
             for (var val of this.content[class_uri][subject_uri][triple_predicate]) {
                 // val: all values of a given property of an identifiable object
+                // skip falsy values
+                if (!val) continue;
                 let triple_object
                 if (dt) {
                     triple_object = nodeFunc(val, namedNode(dt))

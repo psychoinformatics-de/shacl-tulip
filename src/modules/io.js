@@ -18,14 +18,21 @@ export async function readRDF(file_url, headers = { "Content-Type": "text/turtle
         res = await fetch(url,
             {
                 formats, 
-                headers: headers
+                headers: headers,
+                cache: 'no-cache',
             }
         )
         // Handle cases where the server returns generic 'text/plain' or 'text/html' content type
         if (['text/plain', 'text/html'].indexOf(res.headers.get('content-type')) >= 0) {
             // default to turtle
             headers['Content-Type'] = 'text/turtle';
-            res = await fetch(url, { formats, headers });
+            res = await fetch(url,
+                {
+                    formats,
+                    headers: headers,
+                    cache: 'no-cache',
+                }
+            );
         }
 
         if (!res.ok) {

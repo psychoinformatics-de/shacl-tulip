@@ -1,6 +1,6 @@
 {
   "name": "shacl-tulip",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "main": "./src/index.js",
   "module": "./src/index.js",
@@ -19,7 +19,7 @@
     "http-server": "^14.1.1",
     "jsdoc": "^4.0.4",
     "vite": "^6.2.0",
-    "vitest": "^3.0.8"
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@rdfjs/fetch-lite": "^3.3.0",

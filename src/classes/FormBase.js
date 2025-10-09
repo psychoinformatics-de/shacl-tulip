@@ -18,14 +18,17 @@ export class FormBase {
         ]
         // Example formData structure:
         // var exFormData = {
-        //   "https://concepts.datalad.org/s/distribution/unreleased/Person": {          // RDF type of a subject
-        //     "https://example.org/ns/dataset/#ahorst": {                               // A subject: named or blank node
-        //       "https://concepts.datalad.org/s/distribution/unreleased/email":  []     // A predicate: named node
-        //       "shaclvue:termType": "NamedNode"                                        // the nodetype of the subject: NamedNode or BlankNode (NOT USED)
-        //     }
-        //   },
-        //   "https://concepts.datalad.org/s/prov/unreleased/Attribution": {             // RDF type of a subject
-        //   } 
+        //     "https://concepts.datalad.org/s/distribution/unreleased/Person": {          // RDF type of a subject
+        //         "https://example.org/ns/dataset/#ahorst": {                               // A subject: named or blank node
+        //             "https://concepts.datalad.org/s/distribution/unreleased/email": [       // A predicate: named node
+        //                 {                                                                   // Individual triple objects
+        //                     "value": "something",                                           // 'value' is the only required key
+        //                 }                                                                    
+        //             ]
+        //         }
+        //     },
+        //     "https://concepts.datalad.org/s/prov/unreleased/Attribution": {             // RDF type of a subject
+        //     } 
         // }
 	}
 
@@ -73,7 +76,7 @@ export class FormBase {
         }
     }
 
-    clearSubject(class_uri, subject_uri, setVal = [null]) {
+    clearSubject(class_uri, subject_uri, setVal = [{value:null}]) {
         // clear_current_node
         // Error: if the RDF:type iri does not exist in the lookup object
         if (Object.keys(this.content).indexOf(class_uri) < 0) {
@@ -89,7 +92,7 @@ export class FormBase {
         }
     }
 
-    _objectKeysToNull(obj, setVal = [null]) {
+    _objectKeysToNull(obj, setVal = [{value:null}]) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 obj[key] = setVal;
@@ -97,7 +100,7 @@ export class FormBase {
         }
     }
 
-    addPredicate(class_uri, subject_uri, predicate_uri, setVal = [null]) {
+    addPredicate(class_uri, subject_uri, predicate_uri, setVal = [{value:null}]) {
         // add_empty_triple
         // if the class and node exist and the predicate does not exist, add it
         // if the class and node exist and the predicate already exists, add empty value to array
@@ -114,9 +117,13 @@ export class FormBase {
         }
     }
 
-    addObject(class_uri, subject_uri, predicate_uri) {
+    addObject(class_uri, subject_uri, predicate_uri, object_idx) {
         // add_empty_triple_manual
-        this.content[class_uri][subject_uri][predicate_uri].push(null)
+        if (object_idx) {
+            this.content[class_uri][subject_uri][predicate_uri].splice(object_idx + 1, 0, {value:null});
+        } else {
+            this.content[class_uri][subject_uri][predicate_uri].push({value:null})
+        }
     }
 
     removeObject(class_uri, subject_uri, predicate_uri, object_idx) {
@@ -146,9 +153,9 @@ export class FormBase {
         // Now we need to add all triples relating to the properties of the record.
         for (var triple_predicate of Object.keys(this.content[class_uri][subject_uri])) {
             // triple_predicate: all properties of an identifiable object
-            // Only process entered values, i.e. ignore property if all array elements are falsy
+            // Only process entered values, i.e. ignore property if all array element values are falsy
             if (Array.isArray(this.content[class_uri][subject_uri][triple_predicate]) &&
-                this.content[class_uri][subject_uri][triple_predicate].every(value => !value)) {
+                this.content[class_uri][subject_uri][triple_predicate].every(el => !el.value)) {
                 continue;
             }
             // Don't add id_iri triple, since it would have been added already if it exists
@@ -165,15 +172,15 @@ export class FormBase {
             // In order to set the node type of the object, we first need to figure it out
             var [nodeFunc, dt] = shapesDS.getPropertyNodeKind(class_uri, triple_predicate, this.ID_IRI)
             // Now we can create the object nodes for each property
-            for (var val of this.content[class_uri][subject_uri][triple_predicate]) {
-                // val: all values of a given property of an identifiable object
+            for (var el of this.content[class_uri][subject_uri][triple_predicate]) {
+                // el: all values of a given property of an identifiable object
                 // skip falsy values
-                if (!val) continue;
+                if (!el.value) continue;
                 let triple_object
                 if (dt) {
-                    triple_object = nodeFunc(val, namedNode(dt))
+                    triple_object = nodeFunc(el.value, namedNode(dt))
                 } else {
-                    triple_object = nodeFunc(val)
+                    triple_object = nodeFunc(el.value)
                 }
                 // and finally we can add the quads to the store
                 let q = quad(subject, predicate, triple_object)
@@ -203,7 +210,7 @@ export class FormBase {
         // the record_id itself is the triple subject, which is a blank node.
         var subject
         if (Object.keys(record).indexOf(this.ID_IRI) >= 0) {
-            var subject_iri = record[this.ID_IRI][0]
+            var subject_iri = record[this.ID_IRI][0].value
             subject = namedNode(subject_iri)
         } else {
             subject = blankNode(record_id)
@@ -243,13 +250,13 @@ export class FormBase {
             }
             this.addPredicate(class_uri, subject_uri, predicate_uri)
             var length = this.content[class_uri][subject_uri][predicate_uri].length
-            this.content[class_uri][subject_uri][predicate_uri][length-1] = quad.object.value
+            this.content[class_uri][subject_uri][predicate_uri][length-1].value = quad.object.value
         });
         // Here we deal with explicitly adding the id_iri quad, if necessary
         if (subject_term.termType === "NamedNode"  && !IdQuadExists) {
             this.addPredicate(class_uri, subject_uri, this.ID_IRI)
             var l = this.content[class_uri][subject_uri][this.ID_IRI].length
-            this.content[class_uri][subject_uri][this.ID_IRI][l-1] = subject_uri
+            this.content[class_uri][subject_uri][this.ID_IRI][l-1].value = subject_uri
         }
     }
 

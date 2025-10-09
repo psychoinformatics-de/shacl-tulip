@@ -39,17 +39,17 @@ describe('FormBase', () => {
         // Test adding an empty predicate (+ first object)
         form.addPredicate(class_uri, subject_uri, predicate_uri)
         expect(Object.keys(form.content[class_uri][subject_uri])).toContain(predicate_uri)
-        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([null])
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([{value: null}])
         // Test setting first object value, and adding another empty object
-        form.content[class_uri][subject_uri][predicate_uri][0] = "TestName"
+        form.content[class_uri][subject_uri][predicate_uri][0].value = "TestName"
         form.addObject(class_uri, subject_uri, predicate_uri)
-        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual(['TestName', null])
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([{value: 'TestName'}, {value: null}])
         // Test removing an object
         form.removeObject(class_uri, subject_uri, predicate_uri, 1)
-        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual(['TestName'])
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([{value: 'TestName'}])
         // Add ID
         form.addPredicate(class_uri, subject_uri, id_iri)
-        form.content[class_uri][subject_uri][id_iri][0] = subject_uri
+        form.content[class_uri][subject_uri][id_iri][0].value = subject_uri
         // Test converting a form node to RDF quads
         // First we need a shapes dataset
         server = httpServer.createServer({ });
@@ -88,9 +88,9 @@ describe('FormBase', () => {
         form.quadsToFormData(class_uri, subject_term, rdfDS)
         expect(Object.keys(form.content)).toContain(class_uri)
         expect(Object.keys(form.content[class_uri])).toContain(subject_uri)
-        expect(form.content[class_uri][subject_uri][RDF.type.value]).toEqual([class_uri])
-        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual(["TestName"])
-        expect(form.content[class_uri][subject_uri][id_iri]).toEqual([subject_uri])
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([{value: "TestName"}])
+        expect(form.content[class_uri][subject_uri][id_iri]).toEqual([{value: subject_uri}])
+        expect(form.content[class_uri][subject_uri][RDF.type.value]).toEqual([{value: class_uri}])
         // Now save node
         let rdfDSnew = new RdfDataset();
         form.saveNode(class_uri, subject_uri, shapesDS, rdfDSnew, false)
@@ -108,11 +108,11 @@ describe('FormBase', () => {
         // Test add a subject and objects
         form.addSubject(class_uri, subject_uri)
         form.addPredicate(class_uri, subject_uri, predicate_uri)
-        form.content[class_uri][subject_uri][predicate_uri][0] = "TestName"
+        form.content[class_uri][subject_uri][predicate_uri][0].value = "TestName"
         form.addObject(class_uri, subject_uri, predicate_uri)
         // Test clearing the subject
         form.clearSubject(class_uri, subject_uri)
-        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([null])
+        expect(form.content[class_uri][subject_uri][predicate_uri]).toEqual([{value: null}])
         // Test removing the subject
         // First add one more subject, then remove it, then remove the original subject
         form.addSubject(class_uri, subject2_uri)
@@ -124,13 +124,4 @@ describe('FormBase', () => {
         form.removeSubject(class_uri, subject_uri)
         expect(Object.keys(form.content)).not.toContainEqual(class_uri)
     })
-
-
-
-    
-
-
-
-
-
 });

@@ -248,6 +248,14 @@ export class FormBase {
             if (predicate_uri === this.ID_IRI) {
                 IdQuadExists = true
             }
+            // Do not add an object to the predicate array if the exact value already exists there
+            let objectArray = this.content[class_uri][subject_uri][predicate_uri]
+            if (objectArray) {
+                const existingObjectVal = objectArray.find((element) => element.value === quad.object.value);
+                if (existingObjectVal) {
+                    return;
+                }
+            }
             this.addPredicate(class_uri, subject_uri, predicate_uri)
             var length = this.content[class_uri][subject_uri][predicate_uri].length
             this.content[class_uri][subject_uri][predicate_uri][length-1].value = quad.object.value

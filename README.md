@@ -1,5 +1,8 @@
 # `shacl-tulip`
 
+**_CONTINUOUS DEVELOPMENT OF THIS PROJECT HAS MOVED TO https://hub.psychoinformatics.de/datalink/shacl-tulip.git_**
+
+
 Like "shacl-vue-lib".
 
 This is the main library behind [`shacl-vue`](https://github.com/psychoinformatics-de/shacl-vue).
